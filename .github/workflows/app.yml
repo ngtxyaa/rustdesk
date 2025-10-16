@@ -1,0 +1,49 @@
+name: Build Android App
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type (release/debug)'
+        required: true
+        default: 'release'
+      target_archs:
+        description: 'Target Architectures (comma-separated, e.g., android-arm64,android-arm)'
+        required: true
+        default: 'android-arm64,android-arm'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5' # 根据项目需求指定Flutter版本
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: |
+          flutter build apk --${{ github.event.inputs.build_type }} \
+            --target-platform ${{ github.event.inputs.target_archs }} \
+            --split-per-abi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apks
+          path: build/app/outputs/flutter-apk/*.apk
